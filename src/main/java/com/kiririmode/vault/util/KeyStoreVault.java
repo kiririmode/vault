@@ -9,11 +9,12 @@ import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStore.SecretKeyEntry;
+import java.security.spec.AlgorithmParameterSpec;
 
-import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
 
 public class KeyStoreVault implements Vault {
 
@@ -21,12 +22,16 @@ public class KeyStoreVault implements Vault {
 	private String keyStorePassword;
 	private String keyStoreType;
 	private String algorithm;
+	private String hexEncodedKey;
+	private String hexEncodedIv;
 
-	public KeyStoreVault(String keyStoreUrl, String keyStorePassword, String keyStoreType, String algorithm) {
+	public KeyStoreVault(String keyStoreUrl, String keyStorePassword, String keyStoreType, String algorithm, String hexEncodedKey, String hexEncodedIv) {
 		this.keyStoreUrl = keyStoreUrl;
 		this.keyStorePassword = keyStorePassword;
 		this.keyStoreType = keyStoreType;
 		this.algorithm = algorithm;
+		this.hexEncodedKey = hexEncodedKey;
+		this.hexEncodedIv = hexEncodedIv;
 	}
 	
 	private KeyStore getKeyStore(String keyStoreUrl, String keyStorePassword, String keyStoreType) throws IOException, GeneralSecurityException{
@@ -47,10 +52,12 @@ public class KeyStoreVault implements Vault {
 		try {
 			KeyStore ks = getKeyStore(keyStoreUrl, keyStorePassword, keyStoreType);
 
-			SecretKeyFactory factory = SecretKeyFactory.getInstance("PBE");
-			SecretKey secretKey = factory.generateSecret(new PBEKeySpec(secret.toCharArray()));			
-			KeyStore.SecretKeyEntry entry = new SecretKeyEntry(secretKey);
-
+			Cipher cipher = Cipher.getInstance(algorithm);
+			cipher.init(Cipher.ENCRYPT_MODE, getSecretKey(hexEncodedKey), getIv(hexEncodedIv));
+			byte[] encryptedSecret = cipher.doFinal(secret.getBytes(StandardCharsets.UTF_8));
+			
+			SecretKeySpec keySpec = new SecretKeySpec(encryptedSecret, "AES");
+			KeyStore.SecretKeyEntry entry = new SecretKeyEntry(keySpec);			
 			ks.setEntry(alias, entry, new KeyStore.PasswordProtection(keyStorePassword.toCharArray()));
 
 			try (FileOutputStream fos = new FileOutputStream(keyStoreUrl)) {
@@ -66,14 +73,24 @@ public class KeyStoreVault implements Vault {
 		try {
 			KeyStore ks = getKeyStore(keyStoreUrl, keyStorePassword, keyStoreType);
 			KeyStore.SecretKeyEntry secretKeyEntry = (KeyStore.SecretKeyEntry) ks.getEntry(alias, new KeyStore.PasswordProtection(keyStorePassword.toCharArray()));
+			byte[] encrypted = secretKeyEntry.getSecretKey().getEncoded();
 
-			SecretKeyFactory factory = SecretKeyFactory.getInstance("PBE");
-			PBEKeySpec keySpec = (PBEKeySpec)factory.getKeySpec(secretKeyEntry.getSecretKey(), PBEKeySpec.class);
+			Cipher cipher = Cipher.getInstance(algorithm);
+			cipher.init(Cipher.DECRYPT_MODE, getSecretKey(hexEncodedKey), getIv(hexEncodedIv));
+			byte[] decrypted = cipher.doFinal(encrypted);
 			
-			return new String(keySpec.getPassword());
+			return new String(decrypted, StandardCharsets.UTF_8);
 		} catch (IOException | GeneralSecurityException e) {
 			throw new VaultException(String.format("retrieve failed: keyStore[%s], alias: [%s]", keyStoreUrl, alias), e);
 		}
 	}
+	
+    private Key getSecretKey(String hexEncodedKey) {
+        return new SecretKeySpec(DatatypeConverter.parseHexBinary(hexEncodedKey), "AES");
+    }
+
+    private AlgorithmParameterSpec getIv(String hexEncodedIv) {
+        return new IvParameterSpec(DatatypeConverter.parseHexBinary(hexEncodedIv));
+    }
 
 }
