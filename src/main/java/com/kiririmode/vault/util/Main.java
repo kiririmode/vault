@@ -5,11 +5,9 @@ import java.io.Console;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 import com.kiririmode.vault.cmd.SimpleCommandLineParser;
 
@@ -28,11 +26,11 @@ public class Main {
 	private static final String ENCRYPT_ALGORITHM = "AES/CBC/PKCS5Padding";
 
 	/** キーストアのパスを指定するためのコマンドラインオプション用キー */
-	private static final String KEY_KEYSTORE_PATH = "keystore";
+	private static final String OPT_KEYSTORE_PATH = "keystore";
 	/** 秘匿情報を格納したプロパティファイルのパスを指定するためのコマンドラインオプション用キー */
-	private static final String KEY_PROPERTY_PATH = "prop";
+	private static final String OPT_PROPERTY_PATH = "prop";
 	/** 暗号化用の秘密鍵や初期化ベクトルを定義したプロパティファイルのパスを指定するためのコマンドラインオプション用キー */
-	private static final String KEY_VAULT_PROPERTY_PATH = "vault";
+	private static final String OPT_VAULT_PROPERTY_PATH = "vault";
 
 	private static final String KEY_VAULT_IV = "vault.iv";
 	private static final String KEY_VAULT_KEY = "vault.key";
@@ -42,14 +40,14 @@ public class Main {
 		try {
 			// コマンドライン引数のパース
 			SimpleCommandLineParser parser = new SimpleCommandLineParser(args);
-			Map<String, String> optMap = parser.parseOption(KEY_KEYSTORE_PATH, KEY_PROPERTY_PATH, KEY_VAULT_PROPERTY_PATH);
+			Map<String, String> optMap = parser.parseOption(OPT_KEYSTORE_PATH, OPT_PROPERTY_PATH, OPT_VAULT_PROPERTY_PATH);
 
 			// コマンドラインで指定された値を保持
-			String keyStorePath = Objects.requireNonNull(optMap.get(KEY_KEYSTORE_PATH),
+			String keyStorePath = Objects.requireNonNull(optMap.get(OPT_KEYSTORE_PATH),
 					"-keystore keystorePath is missing");
-			String propertyPath = Objects.requireNonNull(optMap.get(KEY_PROPERTY_PATH),
+			String propertyPath = Objects.requireNonNull(optMap.get(OPT_PROPERTY_PATH),
 					"-prop propertyPath is missing");
-			String vaultPropertyPath = Objects.requireNonNull(optMap.get(KEY_VAULT_PROPERTY_PATH),
+			String vaultPropertyPath = Objects.requireNonNull(optMap.get(OPT_VAULT_PROPERTY_PATH),
 					"-vault propertyPath is missing");
 			Console console = Objects.requireNonNull(System.console(), "console cannot be retrieved");
 
