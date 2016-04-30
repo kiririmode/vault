@@ -11,13 +11,6 @@ import java.util.Properties;
 
 import com.kiririmode.vault.cmd.SimpleCommandLineParser;
 
-/**
- * <code>java -jar jar-${version}.jar -prop <property file path> -keystore
- * <keystore path>
- * 
- * @author kiririmode
- *
- */
 public class Main {
 
 	/** KeyStore の形式 */
@@ -28,7 +21,7 @@ public class Main {
 	/** キーストアのパスを指定するためのコマンドラインオプション用キー */
 	private static final String OPT_KEYSTORE_PATH = "keystore";
 	/** 秘匿情報を格納したプロパティファイルのパスを指定するためのコマンドラインオプション用キー */
-	private static final String OPT_PROPERTY_PATH = "prop";
+	private static final String OPT_PROPERTY_PATH = "secret";
 	/** 暗号化用の秘密鍵や初期化ベクトルを定義したプロパティファイルのパスを指定するためのコマンドラインオプション用キー */
 	private static final String OPT_VAULT_PROPERTY_PATH = "vault";
 
@@ -46,7 +39,7 @@ public class Main {
 			String keyStorePath = Objects.requireNonNull(optMap.get(OPT_KEYSTORE_PATH),
 					"-keystore keystorePath is missing");
 			String propertyPath = Objects.requireNonNull(optMap.get(OPT_PROPERTY_PATH),
-					"-prop propertyPath is missing");
+					"-secret propertyPath is missing");
 			String vaultPropertyPath = Objects.requireNonNull(optMap.get(OPT_VAULT_PROPERTY_PATH),
 					"-vault propertyPath is missing");
 			Console console = Objects.requireNonNull(System.console(), "console cannot be retrieved");
@@ -65,6 +58,7 @@ public class Main {
 
 		} catch (NullPointerException e) {
 			System.err.println(e.getMessage());
+			usage();
 		}
 	}
 
@@ -75,5 +69,9 @@ public class Main {
 			prop.load(br);
 		}
 		return prop;
+	}
+	
+	static void usage() {
+		System.err.println("java -jar jar-${version}.jar -secret <property file path> -vault <property file path> -keystore <keystore path>");
 	}
 }
